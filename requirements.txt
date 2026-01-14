@@ -3,3 +3,4 @@ ccxt
 aiohttp
 solders
 base58
+coincurve
