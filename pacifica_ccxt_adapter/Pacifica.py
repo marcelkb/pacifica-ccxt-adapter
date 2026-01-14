@@ -551,32 +551,37 @@ class Pacifica(ccxt.Exchange):
         return self.fetch_my_trades(symbol, since, limit)
 
     def fetch_my_trades(self, symbol=None, since=None, limit=100, params={}):
-        payload = {}
-        if symbol:
-            payload["symbol"] = self._market_name(symbol)
+        try:
+            payload = {}
+            if symbol:
+                payload["symbol"] = self._market_name(symbol)
 
-        trades = self._private_post(
-            "/trades",
-            payload,
-            "get_trades",
-        )
+            trades = self._private_post(
+                "/trades",
+                payload,
+                "get_trades",
+            )
 
-        out = []
-        for t in trades:
-            ts = int(t["timestamp"] * 1000)
-            out.append({
-                "id": str(t["trade_id"]),
-                "symbol": self._ccxt_symbol(t["symbol"]),
-                "side": t["side"],
-                "price": float(t["price"]),
-                "amount": float(t["size"]),
-                "timestamp": ts,
-                "datetime": self.iso8601(ts),
-                "cost": float(t["price"]) * float(t["size"]),
-                "fee": t.get("fee"),
-                "info": t,
-            })
-        return out
+            out = []
+            for t in trades:
+                ts = int(t["timestamp"] * 1000)
+                out.append({
+                    "id": str(t["trade_id"]),
+                    "symbol": self._ccxt_symbol(t["symbol"]),
+                    "side": t["side"],
+                    "price": float(t["price"]),
+                    "amount": float(t["size"]),
+                    "timestamp": ts,
+                    "datetime": self.iso8601(ts),
+                    "cost": float(t["price"]) * float(t["size"]),
+                    "fee": t.get("fee"),
+                    "info": t,
+                })
+            return out
+        except Exception as e:
+            print(e)
+            traceback.print_exc()
+            return None
 
 
     def fetch_accounts(self, params={}):
