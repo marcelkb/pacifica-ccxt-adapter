@@ -79,6 +79,8 @@ class Pacifica(ccxt.Exchange):
     def __init__(self, config: Dict[str, Any] = {}):
         super().__init__(config)
 
+        self.id = "pacifica"
+
         self.base_url = config.get(
             "baseUrl", "https://api.pacifica.fi/api/v1"
         )
@@ -133,6 +135,24 @@ class Pacifica(ccxt.Exchange):
             "fetchFundingRate": True,
             "fetchFundingRates": True,
         })
+
+        self.options = self.deep_extend({
+            "defaultType": "swap",
+        }, self.options)
+
+        self.fees.update({
+            'swap': {
+                'taker': self.parse_number('0.0002'),
+                'maker': self.parse_number('0.0002'),
+            },
+            'spot': {
+                'taker': self.parse_number('0.0002'),
+                'maker': self.parse_number('0.0002'),
+            },
+        })
+
+        self.name = "Pacifica"
+        self.rateLimit = 1000
 
     # =====================================================
     # INTERNAL REQUEST
@@ -374,6 +394,9 @@ class Pacifica(ccxt.Exchange):
         market = self.markets[symbol]
         price, amount = self.normalize_order(market, price, amount, side)
 
+        payload = {}
+        payload.update(params)
+
         payload = {
             "symbol": self._crypto_name(symbol),
             "side": "bid" if side == EOrderSide.BUY.value else "ask",
@@ -400,12 +423,13 @@ class Pacifica(ccxt.Exchange):
         if price:
             payload["price"] = str(price)
 
-        payload.update(params)
 
         try:
             o = self._private_post("/orders/create", payload, "create_order")
         except Exception as e:
             raise InvalidOrder(str(e))
+
+        fee = float(self.fees["swap"]["taker"]) * float(amount) * float(price)
 
         return {
             "id": str(o["order_id"]),
@@ -414,6 +438,18 @@ class Pacifica(ccxt.Exchange):
             "side": side,
             "price": float(price),
             "amount": float(amount),
+            'fees':
+                {
+                    'cost': fee,
+                    'currency': 'USDC',
+                    'rate': 0.004
+                },
+            'fee':
+                {
+                    'cost': fee,
+                    'currency': 'USDC',
+                    'rate': 0.004
+                },
             "status": o.get("status", "open"),
             "info": o,
         }
@@ -489,7 +525,7 @@ class Pacifica(ccxt.Exchange):
                 "unrealisedPnl": unrealized_pnl,
                 "leverage": self.fetch_leverage(symbol),
                 "marginMode": "cross",
-                "info": self.extend({"unrealisedPnl": unrealized_pnl, "curRealisedPnl": 0, "size": p["amoun"], "positionValue":notional}, p)
+                "info": self.extend({"unrealisedPnl": unrealized_pnl, "curRealisedPnl": 0, "size": p["amount"], "positionValue":notional}, p)
             })
 
         if symbols:
@@ -581,3 +617,6 @@ class Pacifica(ccxt.Exchange):
 
     def fetch_margin_mode(self, symbol: str, params={}):
         return "cross"
+
+    def set_margin_mode(self, marginMode: str, symbol: Str = None, params={}):
+        return None
