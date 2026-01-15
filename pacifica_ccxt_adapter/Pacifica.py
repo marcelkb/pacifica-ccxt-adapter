@@ -243,9 +243,13 @@ class Pacifica(ccxt.Exchange):
                     "amount": self._decimal_places(m["lot_size"]),
                 },
                 "limits": {
-                    "amount": {
+                    "cost": {
                         "min": float(m["min_order_size"]),
                         "max": float(m["max_order_size"]),
+                    },
+                    "amount": {
+                        "min": float(m["min_tick"]),
+                        "max": float(m["max_tick"]),
                     },
                 },
                 "info": m,
